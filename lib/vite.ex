@@ -5,10 +5,10 @@ defmodule Vite do
   alias Vite.View
   alias Vite.React
 
-  defdelegate vite_client, to: View
-  defdelegate vite_snippet(entry_name), to: View
-  defdelegate inlined_phx_manifest, to: View
-  defdelegate react_refresh_snippet, to: React
+  defdelegate vite_client(app_name), to: View
+  defdelegate vite_snippet(app_name, entry_name), to: View
+  defdelegate inlined_phx_manifest(app_name), to: View
+  defdelegate react_refresh_snippet(app_name), to: React
 
   def is_prod() do
     Vite.Config.current_env() == :prod

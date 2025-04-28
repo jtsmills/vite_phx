@@ -17,11 +17,11 @@ defmodule Vite.ManifestReader do
     end
   end
 
-  def read_vite() do
-    case Cache.get(:vite_manifest) do
+  def read_vite(app_name) do
+    case Cache.get({:vite_manifest, app_name}) do
       nil ->
-        res = read_vite(Config.current_env())
-        Cache.put(:vite_manifest, res)
+        res = read_vite(app_name, Config.current_env())
+        Cache.put({:vite_manifest, app_name}, res)
         res
 
       res ->
@@ -29,8 +29,8 @@ defmodule Vite.ManifestReader do
     end
   end
 
-  def read_vite(:prod) do
-    full_vite_manifest = Config.full_vite_manifest()
+  def read_vite(app_name, :prod) do
+    full_vite_manifest = Config.full_vite_manifest(app_name)
 
     if File.exists?(full_vite_manifest) do
       full_vite_manifest |> File.read!() |> Config.json_library().decode!()
@@ -39,15 +39,15 @@ defmodule Vite.ManifestReader do
     end
   end
 
-  def read_vite(_) do
-    File.read!(Config.vite_manifest()) |> Config.json_library().decode!()
+  def read_vite(app_name, _) do
+    File.read!(Config.vite_manifest(app_name)) |> Config.json_library().decode!()
   end
 
-  def read_phx() do
-    case Cache.get(:phx_manifest) do
+  def read_phx(app_name) do
+    case Cache.get({:phx_manifest, app_name}) do
       nil ->
-        res = read_phx(Config.current_env())
-        Cache.put(:phx_manifest, res)
+        res = read_phx(app_name, Config.current_env())
+        Cache.put({:phx_manifest, app_name}, res)
         res
 
       res ->
@@ -55,11 +55,11 @@ defmodule Vite.ManifestReader do
     end
   end
 
-  def read_phx(:prod) do
-    File.read!(Config.full_phx_manifest()) |> Config.json_library().decode!()
+  def read_phx(app_name, :prod) do
+    File.read!(Config.full_phx_manifest(app_name)) |> Config.json_library().decode!()
   end
 
-  def read_phx(_) do
+  def read_phx(_, _) do
     ""
   end
 end

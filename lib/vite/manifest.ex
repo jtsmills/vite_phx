@@ -4,22 +4,22 @@ defmodule Vite.Manifest do
 
   @type entry_value :: binary() | list(binary()) | nil
 
-  @spec read() :: map()
-  def read() do
-    ManifestReader.read_vite()
+  @spec read(atom()) :: map()
+  def read(app_name) do
+    ManifestReader.read_vite(app_name)
   end
 
-  @spec entries() :: [list()]
-  def entries() do
-    read()
+  @spec entries(atom()) :: [list()]
+  def entries(app_name) do
+    read(app_name)
     |> Enum.filter(&isEntry/1)
     |> Enum.map(fn {_, value} -> value end)
-    |> Enum.map(fn entry -> convert_item([], entry) end)
+    |> Enum.map(fn entry -> convert_item([], entry, app_name) end)
   end
 
-  @spec entry(binary()) :: list()
-  def entry(entry_name) do
-    Enum.find(entries(), &(Keyword.get(&1, :entry_name) == entry_name))
+  @spec entry(atom(), binary()) :: list()
+  def entry(app_name, entry_name) do
+    Enum.find(entries(app_name), &(Keyword.get(&1, :entry_name) == entry_name))
   end
 
   @spec isEntry({any, map()}) :: boolean()
@@ -34,18 +34,18 @@ defmodule Vite.Manifest do
   #   "isEntry" => true,
   #   "src" => "src/main.tsx"
   # }
-  defp convert_item(acc, raw_data) do
+  defp convert_item(acc, raw_data, app_name) do
     css = Map.get(raw_data, "css", [])
     entry_name = Map.get(raw_data, "src")
     imports = Map.get(raw_data, "imports", [])
     acc = acc ++ [{:entry_name, entry_name}]
     acc = acc ++ Enum.map(css, fn file -> {:css, file} end)
     acc = acc ++ [{:module, Map.get(raw_data, "file")}]
-    acc = Enum.reduce(imports, acc, fn file, innerAcc -> handle_import(innerAcc, file) end)
+    acc = Enum.reduce(imports, acc, fn file, innerAcc -> handle_import(innerAcc, file, app_name) end)
     acc |> Enum.uniq()
   end
 
-  defp convert_item(acc, raw_data, :import) do
+  defp convert_item(acc, raw_data, app_name, :import) do
     css = Map.get(raw_data, "css", [])
     imports = Map.get(raw_data, "imports", [])
     import_module = {:import_module, Map.get(raw_data, "file")}
@@ -59,19 +59,19 @@ defmodule Vite.Manifest do
       false ->
         acc = acc ++ [import_module]
 
-        acc = Enum.reduce(imports, acc, fn file, innerAcc -> handle_import(innerAcc, file) end)
+        acc = Enum.reduce(imports, acc, fn file, innerAcc -> handle_import(innerAcc, file, app_name) end)
         acc |> Enum.uniq()
     end
   end
 
-  @spec get_file(binary()) :: entry_value()
-  def get_file(file) do
-    read() |> get_in([file, "file"]) |> raise_missing(file)
+  @spec get_file(atom(), binary()) :: entry_value()
+  def get_file(app_name, file) do
+    read(app_name) |> get_in([file, "file"]) |> raise_missing(file)
   end
 
-  def handle_import(acc, file) do
-    raw_data = read() |> Map.get(file)
-    convert_item(acc, raw_data, :import)
+  def handle_import(acc, file, app_name) do
+    raw_data = read(app_name) |> Map.get(file)
+    convert_item(acc, raw_data, app_name, :import)
   end
 
   @spec raise_missing(entry_value(), binary()) :: entry_value()
